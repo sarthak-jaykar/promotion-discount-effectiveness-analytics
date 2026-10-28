@@ -1,0 +1,58 @@
+// =====================================================================
+// Promotion & Discount Effectiveness: model changes and DAX measures
+// Table: sales_data
+//
+// STEP A (calculated column, Table tools > New column on sales_data):
+// Discount Band = SWITCH ( TRUE (),
+//     sales_data[Discount] = 0, "No discount",
+//     sales_data[Discount] <= 0.1, "1-10%",
+//     sales_data[Discount] <= 0.2, "11-20%",
+//     sales_data[Discount] <= 0.3, "21-30%",
+//     "Over 30%" )
+// Then sort Discount Band by a helper column if needed, or use the order above.
+//
+// STEP B (measures). Expected values in brackets.
+// Values are for the full dataset (no slicers applied).
+// =====================================================================
+
+Total Sales =
+SUM ( sales_data[Sales] )                                  // [2,297,200.86]
+
+Total Profit =
+SUM ( sales_data[Profit] )                                 // [286,397.02]
+
+Profit Margin % =
+DIVIDE ( [Total Profit], [Total Sales] ) * 100             // [12.47]
+
+Discounted Lines % =
+DIVIDE ( CALCULATE ( COUNTROWS ( sales_data ), sales_data[Discount] > 0 ), COUNTROWS ( sales_data ) ) * 100   // [51.99]
+
+Avg Discount per Line % =
+AVERAGE ( sales_data[Discount] ) * 100                     // [15.62]
+
+Avg Quantity per Line =
+AVERAGE ( sales_data[Quantity] )                           // [3.81 overall]
+
+Deep Discount Sales =
+CALCULATE ( [Total Sales], sales_data[Discount] > 0.2 )    // [362,770.15]
+
+Deep Discount Profit =
+CALCULATE ( [Total Profit], sales_data[Discount] > 0.2 )   // [-135,376.06]
+
+Deep Discount Margin % =
+DIVIDE ( [Deep Discount Profit], [Deep Discount Sales] ) * 100   // [-37.32]
+
+Deep Discount Share of Lines % =
+DIVIDE ( CALCULATE ( COUNTROWS ( sales_data ), sales_data[Discount] > 0.2 ), COUNTROWS ( sales_data ) ) * 100   // [13.94]
+
+Margin Excl Deep Discounts % =
+DIVIDE ( [Total Profit] - [Deep Discount Profit], [Total Sales] - [Deep Discount Sales] ) * 100   // [21.80]
+
+// STEP A2 (calculated column, sort key for the discount bands):
+// Discount Band Order = SWITCH ( TRUE (),
+//     sales_data[Discount] = 0, 1,
+//     sales_data[Discount] <= 0.1, 2,
+//     sales_data[Discount] <= 0.2, 3,
+//     sales_data[Discount] <= 0.3, 4,
+//     5 )
+// Then: select Discount Band > Column tools > Sort by column > Discount Band Order.
